@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Round Robin CPU Scheduling</title>
+    <style>
+       table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        #gantt-chart {
+            margin-top: 20px;
+            width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .process-bar {
+            display: inline-block;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        #result-table {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Round Robin CPU Scheduling</h2>
+
+    <label for="process-count">Enter the number of processes:</label>
+    <input type="number" id="process-count">
+
+    <label for="time-quantum">Enter the time quantum:</label>
+    <input type="number" id="time-quantum">
+
+    <button onclick="getInput()">Submit</button>
+
+    <div id="input-form"></div>
+
+    <button onclick="calculateRoundRobin()">Calculate Round Robin</button>
+
+    <h3>Round Robin Gantt Chart</h3>
+    <div id="gantt-chart"></div>
+
+    <div id="result-table"></div>
+
+    <div>
+        <p>Average Turnaround Time: <span id="avg-turnaround-time"></span> ms</p>
+        <p>Average Waiting Time: <span id="avg-wait-time"></span> ms</p>
+    </div>
+
+    <script>
+        function getInput() {
+            const processCount = parseInt(document.getElementById('process-count').value);
+            let inputForm = '<table><tr><th>Process</th><th>Burst Time</th></tr>';
+
+            for (let i = 1; i <= processCount; i++) {
+                inputForm += `<tr><td>P${i}</td><td><input type="number" id="burst-time-${i}"></td></tr>`;
+            }
+
+            inputForm += '</table>';
+            document.getElementById('input-form').innerHTML = inputForm;
+        }
+
+        function calculateRoundRobin() {
+            const processCount = parseInt(document.getElementById('process-count').value);
+            const timeQuantum = parseInt(document.getElementById('time-quantum').value);
+            let processes = [];
+
+            const processColors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e', '#ecf0f1', '#d35400'];
+
+            for (let i = 1; i <= processCount; i++) {
+                processes.push({
+                    id: i,
+                    burstTime: parseInt(document.getElementById(`burst-time-${i}`).value),
+                    color: processColors[i - 1] || '#3498db',
+                });
+            }
+
+            let completionTimes = [];
+            let turnaroundTimes = [];
+            let waitingTimes = [];
+            let ganttChart = '';
+            let resultTable = '<h3>Round Robin Result Table</h3>';
+            resultTable += '<table><tr><th>Process</th><th>Burst Time</th><th>Completion Time</th><th>Turnaround Time</th><th>Waiting Time</th></tr>';
+
+            let remainingTimes = processes.map(process => process.burstTime);
+            let currentTime = 0;
+
+            while (true) {
+                let allProcessesDone = true;
+
+                for (let i = 0; i < processCount; i++) {
+                    if (remainingTimes[i] > 0) {
+                        allProcessesDone = false;
+
+                        const executeTime = Math.min(remainingTimes[i], timeQuantum);
+                        ganttChart += `<div class="process-bar" style="width: ${executeTime * 20}px; background-color: ${processes[i].color};">P${processes[i].id}</div>`;
+                        
+                        remainingTimes[i] -= executeTime;
+                        currentTime += executeTime;
+                        
+                        completionTimes[i] = currentTime;
+                        turnaroundTimes[i] = completionTimes[i];
+                        waitingTimes[i] = turnaroundTimes[i] - processes[i].burstTime;
+
+                        resultTable += `<tr><td>P${processes[i].id}</td><td>${processes[i].burstTime}</td><td>${completionTimes[i]}</td><td>${turnaroundTimes[i]}</td><td>${waitingTimes[i]}</td></tr>`;
+                    }
+                }
+
+                if (allProcessesDone) {
+                    break;
+                }
+            }
+
+            resultTable += '</table>';
+
+            const avgWaitTime = waitingTimes.reduce((sum, val) => sum + val, 0) / processCount;
+            const avgTurnaroundTime = turnaroundTimes.reduce((sum, val) => sum + val, 0) / processCount;
+
+            document.getElementById('gantt-chart').innerHTML = ganttChart;
+            document.getElementById('result-table').innerHTML = resultTable;
+            document.getElementById('avg-wait-time').textContent = avgWaitTime.toFixed(2);
+            document.getElementById('avg-turnaround-time').textContent = avgTurnaroundTime.toFixed(2);
+        }
+    </script>
+</body>
+</html>
